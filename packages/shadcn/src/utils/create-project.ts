@@ -13,7 +13,7 @@ import prompts from "prompts"
 import { z } from "zod"
 
 const MONOREPO_TEMPLATE_URL =
-  "https://codeload.github.com/levva-ui/ui/tar.gz/main"
+  "https://codeload.github.com/marcoscosta2602/levva-ds/tar.gz/main"
 
 export const TEMPLATES = {
   next: "next",

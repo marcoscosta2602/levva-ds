@@ -10,25 +10,25 @@ const examples = [
   {
     name: "Dashboard",
     href: "/examples/dashboard",
-    code: "https://github.com/levva/ui/tree/main/apps/v4/app/(app)/examples/dashboard",
+    code: "https://github.com/marcoscosta2602/levva-ds/tree/main/apps/levva-ds/app/(examples)/dashboard",
     hidden: false,
   },
   {
     name: "Tasks",
     href: "/examples/tasks",
-    code: "https://github.com/levva/ui/tree/main/apps/v4/app/(app)/examples/tasks",
+    code: "https://github.com/marcoscosta2602/levva-ds/tree/main/apps/levva-ds/app/(examples)/tasks",
     hidden: false,
   },
   {
     name: "Playground",
     href: "/examples/playground",
-    code: "https://github.com/levva/ui/tree/main/apps/v4/app/(app)/examples/playground",
+    code: "https://github.com/marcoscosta2602/levva-ds/tree/main/apps/levva-ds/app/(examples)/playground",
     hidden: false,
   },
   {
     name: "Authentication",
     href: "/examples/authentication",
-    code: "https://github.com/levva/ui/tree/main/apps/v4/app/(app)/examples/authentication",
+    code: "https://github.com/marcoscosta2602/levva-ds/tree/main/apps/levva-ds/app/(examples)/authentication",
     hidden: false,
   },
 ]

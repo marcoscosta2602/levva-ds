@@ -11,9 +11,10 @@ export function ThemeProvider({
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-      enableColorScheme
+      enableSystem={true}
+      disableTransitionOnChange={false}
+      enableColorScheme={true}
+      storageKey="theme"
       {...props}
     >
       {children}

@@ -9,41 +9,11 @@ module.exports = {
       colors: {
         primary: '#ffc800',
         secondary: '#292829',
-      },
-      fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
-      },
-      fontSize: {
-        title: ['3.75rem', { lineHeight: '1' }],
-        body: ['0.875rem', { lineHeight: '1.8' }],
-      },
-
-      colors: {
-        primary: '#ffc800',
-        secondary: '#292829',
-      },
-      fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
-      },
-
-      fontFamily: {
-        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
-        mono: ["var(--font-geist-mono)", ...fontFamily.mono],
-      },
-      colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
         destructive: {
           DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
           foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
@@ -74,6 +44,14 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", ...fontFamily.sans],
+        mono: ["var(--font-geist-mono)", ...fontFamily.mono],
+      },
+      fontSize: {
+        title: ['3.75rem', { lineHeight: '1' }],
+        body: ['0.875rem', { lineHeight: '1.8' }],
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

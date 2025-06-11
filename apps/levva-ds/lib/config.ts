@@ -6,7 +6,7 @@ export const siteConfig = {
     "A set of beautifully-designed, accessible components and a code distribution platform. Works with your favorite frameworks. Open Source. Open Code.",
   links: {
     twitter: "https://twitter.com/levva",
-    github: "https://github.com/levva-ui/ui",
+    github: "https://github.com/marcoscosta2602/levva-ds",
   },
   navItems: [
     {

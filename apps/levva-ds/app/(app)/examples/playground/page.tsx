@@ -1,43 +1,187 @@
-import { Metadata } from "next"
+"use client"
+
 import Image from "next/image"
 import { RotateCcw } from "lucide-react"
+import { useState } from "react"
 
 import { Button } from "@/registry/new-york-v4/ui/button"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/registry/new-york-v4/ui/hover-card"
-import { Label } from "@/registry/new-york-v4/ui/label"
-import { Separator } from "@/registry/new-york-v4/ui/separator"
+import { Textarea } from "@/registry/new-york-v4/ui/textarea"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/registry/new-york-v4/ui/tabs"
-import { Textarea } from "@/registry/new-york-v4/ui/textarea"
+import { Toaster } from "@/registry/new-york-v4/ui/sonner"
+import { toast } from "sonner"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/registry/new-york-v4/ui/card"
+import { Input } from "@/registry/new-york-v4/ui/input"
+import { Label } from "@/registry/new-york-v4/ui/label"
+import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/registry/new-york-v4/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/registry/new-york-v4/ui/select"
+import { Switch } from "@/registry/new-york-v4/ui/switch"
+import { Slider } from "@/registry/new-york-v4/ui/slider"
+import { Avatar, AvatarFallback, AvatarImage } from "@/registry/new-york-v4/ui/avatar"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/registry/new-york-v4/ui/table"
+import { Badge } from "@/registry/new-york-v4/ui/badge"
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/registry/new-york-v4/ui/pagination"
 
-import { CodeViewer } from "./components/code-viewer"
-import { MaxLengthSelector } from "./components/maxlength-selector"
-import { ModelSelector } from "./components/model-selector"
-import { PresetActions } from "./components/preset-actions"
-import { PresetSave } from "./components/preset-save"
-import { PresetSelector } from "./components/preset-selector"
-import { PresetShare } from "./components/preset-share"
-import { TemperatureSelector } from "./components/temperature-selector"
-import { TopPSelector } from "./components/top-p-selector"
-import { models, types } from "./data/models"
-import { presets } from "./data/presets"
+// Tipos para os modelos de tela suportados
 
-export const metadata: Metadata = {
-  title: "Playground",
-  description: "The OpenAI Playground built using the components.",
+type InputField = {
+  type: "input"
+  label: string
+  inputType: string
+  id: string
+  placeholder?: string
+  defaultValue?: string
+}
+type CheckboxField = {
+  type: "checkbox"
+  label: string
+  id: string
+}
+type RadioGroupField = {
+  type: "radio-group"
+  label: string
+  id: string
+  options: { value: string; label: string }[]
+  defaultValue?: string
+}
+type SelectField = {
+  type: "select"
+  label: string
+  id: string
+  options: { value: string; label: string }[]
+}
+type Field = InputField | CheckboxField | RadioGroupField | SelectField
+
+type ActionButton = {
+  type: "button"
+  label: string
+  variant?: string
+}
+type ActionLink = {
+  type: "link"
+  label: string
+  href: string
+}
+type Action = ActionButton | ActionLink
+
+export type ScreenModel =
+  | {
+      type: "login"
+      title: string
+      description: string
+      fields: Field[]
+      actions: Action[]
+    }
+  | {
+      type: "form"
+      title: string
+      description: string
+      fields: Field[]
+      actions: Action[]
+    }
+  | {
+      type: "dashboard"
+      title: string
+      cards: { title: string; value: string; description: string }[]
+      table: {
+        title: string
+        description: string
+        columns: string[]
+        rows: string[][]
+      }
+    }
+  | {
+      type: "settings"
+      title: string
+      description: string
+      switches: { label: string; description: string; id: string }[]
+      slider: { label: string; id: string; defaultValue: number; max: number; step: number }
+      select: { label: string; id: string; options: { value: string; label: string }[] }
+    }
+  | {
+      type: "profile"
+      title: string
+      description: string
+      avatar: string
+      tabs: {
+        value: string
+        label: string
+        fields?: Field[]
+        switches?: { label: string; description: string; id: string }[]
+      }[]
+    }
+  | {
+      type: "table"
+      title: string
+      description: string
+      columns: string[]
+      rows: {
+        user: { name: string; email: string; avatar: string }
+        status: string
+        role: string
+      }[]
+    }
+
+// Função utilitária para garantir que o variant é válido
+const allowedButtonVariants = ["default", "destructive", "outline", "secondary", "ghost", "link"] as const;
+type ButtonVariant = typeof allowedButtonVariants[number];
+function getButtonVariant(variant?: string): ButtonVariant | undefined {
+  return allowedButtonVariants.includes(variant as ButtonVariant) ? (variant as ButtonVariant) : undefined;
 }
 
 export default function PlaygroundPage() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [prompt, setPrompt] = useState("")
+  const [generatedScreen, setGeneratedScreen] = useState<React.ReactNode>(null)
+  const [screenModel, setScreenModel] = useState<ScreenModel | null>(null)
+
+  const handleGenerateScreen = async () => {
+    if (!prompt.trim()) {
+      toast.error("Por favor, descreva a tela que você deseja criar.")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch("/api/playground/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao processar a requisição")
+      }
+
+      if (data.model) {
+        setScreenModel(data.model as ScreenModel)
+        setGeneratedScreen(null)
+      } else if (data.component) {
+        setGeneratedScreen(data.component)
+        setScreenModel(null)
+      }
+      toast.success("Tela gerada com sucesso!")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Algo deu errado. Tente novamente.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <>
+      <Toaster />
       <div className="md:hidden">
         <Image
           src="/examples/playground-light.png"
@@ -55,271 +199,68 @@ export default function PlaygroundPage() {
         />
       </div>
       <div className="hidden flex-1 flex-col md:flex">
-        <div className="container flex flex-col items-start justify-between gap-2 py-4 sm:flex-row sm:items-center sm:gap-0 md:h-16">
-          <h2 className="pl-0.5 text-lg font-semibold">Playground</h2>
-          <div className="ml-auto flex w-full gap-2 sm:justify-end">
-            <PresetSelector presets={presets} />
-            <PresetSave />
-            <div className="hidden gap-2 md:flex">
-              <CodeViewer />
-              <PresetShare />
-            </div>
-            <PresetActions />
-          </div>
-        </div>
-        <Separator />
-        <Tabs defaultValue="complete" className="flex flex-1 flex-col">
+        <Tabs defaultValue="screen" className="flex flex-1 flex-col">
           <div className="container flex flex-1 flex-col py-6">
             <div className="grid flex-1 items-stretch gap-6 md:grid-cols-[1fr_200px]">
-              <div className="hidden flex-col gap-6 sm:flex md:order-2">
-                <div className="grid gap-3">
-                  <HoverCard openDelay={200}>
-                    <HoverCardTrigger asChild>
-                      <span className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Mode
-                      </span>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-[320px] text-sm" side="left">
-                      Choose the interface that best suits your task. You can
-                      provide: a simple prompt to complete, starting and ending
-                      text to insert a completion within, or some text with
-                      instructions to edit it.
-                    </HoverCardContent>
-                  </HoverCard>
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="complete">
-                      <span className="sr-only">Complete</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                      >
-                        <rect
-                          x="4"
-                          y="3"
-                          width="12"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="7"
-                          width="12"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="11"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="15"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="8.5"
-                          y="11"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="8.5"
-                          y="15"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="13"
-                          y="11"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                      </svg>
-                    </TabsTrigger>
-                    <TabsTrigger value="insert">
-                      <span className="sr-only">Insert</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        className="h-5 w-5"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M14.491 7.769a.888.888 0 0 1 .287.648.888.888 0 0 1-.287.648l-3.916 3.667a1.013 1.013 0 0 1-.692.268c-.26 0-.509-.097-.692-.268L5.275 9.065A.886.886 0 0 1 5 8.42a.889.889 0 0 1 .287-.64c.181-.17.427-.267.683-.269.257-.002.504.09.69.258L8.903 9.87V3.917c0-.243.103-.477.287-.649.183-.171.432-.268.692-.268.26 0 .509.097.692.268a.888.888 0 0 1 .287.649V9.87l2.245-2.102c.183-.172.432-.269.692-.269.26 0 .508.097.692.269Z"
-                          fill="currentColor"
-                        ></path>
-                        <rect
-                          x="4"
-                          y="15"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="8.5"
-                          y="15"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="13"
-                          y="15"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                      </svg>
-                    </TabsTrigger>
-                    <TabsTrigger value="edit">
-                      <span className="sr-only">Edit</span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        className="h-5 w-5"
-                      >
-                        <rect
-                          x="4"
-                          y="3"
-                          width="12"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="7"
-                          width="12"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="11"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="4"
-                          y="15"
-                          width="4"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <rect
-                          x="8.5"
-                          y="11"
-                          width="3"
-                          height="2"
-                          rx="1"
-                          fill="currentColor"
-                        ></rect>
-                        <path
-                          d="M17.154 11.346a1.182 1.182 0 0 0-1.671 0L11 15.829V17.5h1.671l4.483-4.483a1.182 1.182 0 0 0 0-1.671Z"
-                          fill="currentColor"
-                        ></path>
-                      </svg>
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-                <ModelSelector types={types} models={models} />
-                <TemperatureSelector defaultValue={[0.56]} />
-                <MaxLengthSelector defaultValue={[256]} />
-                <TopPSelector defaultValue={[0.9]} />
-              </div>
               <div className="flex flex-1 flex-col *:data-[slot=tab-content]:flex-1 md:order-1">
-                <TabsContent value="complete" className="mt-0 border-0 p-0">
+                <TabsContent value="screen" className="mt-0 border-0 p-0">
                   <div className="flex h-full flex-col gap-4">
-                    <Textarea
-                      placeholder="Write a tagline for an ice cream shop"
-                      className="min-h-[400px] flex-1 p-4 md:min-h-[700px] lg:min-h-[700px]"
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Descreva sua tela</h3>
+                        <Textarea
+                          placeholder="Ex: Crie uma tela de login com campos para email e senha, um botão de login e um link para recuperar senha"
+                          className="min-h-[200px]"
+                          value={prompt}
+                          onChange={(e) => setPrompt(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium">Preview</h3>
+                        <div className="bg-muted rounded-md border p-4 min-h-[400px]">
+                          {screenModel ? (
+                            screenModel.type === "login" ? (
+                              <LoginScreen model={screenModel} />
+                            ) : screenModel.type === "form" ? (
+                              <FormScreen model={screenModel} />
+                            ) : screenModel.type === "dashboard" ? (
+                              <DashboardScreen model={screenModel} />
+                            ) : screenModel.type === "settings" ? (
+                              <SettingsScreen model={screenModel} />
+                            ) : screenModel.type === "profile" ? (
+                              <ProfileScreen model={screenModel} />
+                            ) : screenModel.type === "table" ? (
+                              <TableScreen model={screenModel} />
+                            ) : null
+                          ) : generatedScreen ? (
+                            <div dangerouslySetInnerHTML={{ __html: generatedScreen }} />
+                          ) : (
+                            <p className="text-muted-foreground text-sm">
+                              A tela gerada aparecerá aqui.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <Button>Submit</Button>
-                      <Button variant="secondary">
-                        <span className="sr-only">Show history</span>
+                      <Button 
+                        onClick={handleGenerateScreen}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Gerando..." : "Gerar Tela"}
+                      </Button>
+                      <Button 
+                        variant="secondary"
+                        onClick={() => {
+                          setPrompt("")
+                          setGeneratedScreen(null)
+                        }}
+                        disabled={isLoading}
+                      >
+                        <span className="sr-only">Limpar</span>
                         <RotateCcw />
                       </Button>
                     </div>
-                  </div>
-                </TabsContent>
-                <TabsContent
-                  value="insert"
-                  className="mt-0 flex flex-col gap-4 border-0 p-0"
-                >
-                  <div className="grid h-full grid-rows-2 gap-6 lg:grid-cols-2 lg:grid-rows-1">
-                    <Textarea
-                      placeholder="We're writing to [inset]. Congrats from OpenAI!"
-                      className="h-full min-h-[300px] p-4 lg:min-h-[700px] xl:min-h-[700px]"
-                    />
-                    <div className="bg-muted rounded-md border"></div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button>Submit</Button>
-                    <Button variant="secondary">
-                      <span className="sr-only">Show history</span>
-                      <RotateCcw />
-                    </Button>
-                  </div>
-                </TabsContent>
-                <TabsContent
-                  value="edit"
-                  className="mt-0 flex flex-col gap-4 border-0 p-0"
-                >
-                  <div className="grid h-full gap-6 lg:grid-cols-2">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-1 flex-col gap-2">
-                        <Label htmlFor="input" className="sr-only">
-                          Input
-                        </Label>
-                        <Textarea
-                          id="input"
-                          placeholder="We is going to the market."
-                          className="flex-1 p-4 lg:min-h-[580px]"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="instructions">Instructions</Label>
-                        <Textarea
-                          id="instructions"
-                          placeholder="Fix the grammar."
-                        />
-                      </div>
-                    </div>
-                    <div className="bg-muted min-h-[400px] rounded-md border lg:min-h-[700px]" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button>Submit</Button>
-                    <Button variant="secondary">
-                      <span className="sr-only">Show history</span>
-                      <RotateCcw />
-                    </Button>
                   </div>
                 </TabsContent>
               </div>
@@ -328,5 +269,357 @@ export default function PlaygroundPage() {
         </Tabs>
       </div>
     </>
+  )
+}
+
+// Componente para renderizar a tela de login a partir do modelo
+function LoginScreen({ model }: { model: Extract<ScreenModel, { type: "login" }> }) {
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>{model.title}</CardTitle>
+        <CardDescription>{model.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4">
+          {model.fields.map((field: Field) => {
+            if (field.type === "input") {
+              return (
+                <div className="space-y-2" key={field.id}>
+                  <Label htmlFor={field.id}>{field.label}</Label>
+                  <Input id={field.id} type={field.inputType} placeholder={field.placeholder} />
+                </div>
+              )
+            }
+            if (field.type === "checkbox") {
+              return (
+                <div className="flex items-center space-x-2" key={field.id}>
+                  <Checkbox id={field.id} />
+                  <Label htmlFor={field.id}>{field.label}</Label>
+                </div>
+              )
+            }
+            return null
+          })}
+        </form>
+      </CardContent>
+      <CardFooter className="flex flex-col gap-2 items-stretch">
+        {model.actions.map((action: Action, idx: number) => {
+          if (action.type === "button") {
+            return (
+              <Button key={idx} variant={getButtonVariant(action.variant)} className="w-full">{action.label}</Button>
+            )
+          }
+          if (action.type === "link") {
+            return (
+              <Button key={idx} variant="link" className="px-0 w-full" asChild>
+                <a href={action.href}>{action.label}</a>
+              </Button>
+            )
+          }
+          return null
+        })}
+      </CardFooter>
+    </Card>
+  )
+}
+
+// Componente para renderizar tela de formulário
+function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }) {
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{model.title}</CardTitle>
+        <CardDescription>{model.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4">
+          {model.fields.map((field) => {
+            if (field.type === "input") {
+              return (
+                <div className="space-y-2" key={field.id}>
+                  <Label htmlFor={field.id}>{field.label}</Label>
+                  <Input id={field.id} type={field.inputType} placeholder={field.placeholder} defaultValue={field.defaultValue} />
+                </div>
+              )
+            }
+            if (field.type === "checkbox") {
+              return (
+                <div className="flex items-center space-x-2" key={field.id}>
+                  <Checkbox id={field.id} />
+                  <Label htmlFor={field.id}>{field.label}</Label>
+                </div>
+              )
+            }
+            if (field.type === "radio-group") {
+              return (
+                <div className="space-y-2" key={field.id}>
+                  <Label>{field.label}</Label>
+                  <RadioGroup defaultValue={field.defaultValue}>
+                    {field.options.map((opt) => (
+                      <div className="flex items-center space-x-2" key={opt.value}>
+                        <RadioGroupItem value={opt.value} id={opt.value} />
+                        <Label htmlFor={opt.value}>{opt.label}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )
+            }
+            if (field.type === "select") {
+              return (
+                <div className="space-y-2" key={field.id}>
+                  <Label>{field.label}</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options.map((opt) => (
+                        <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
+            }
+            return null
+          })}
+        </form>
+      </CardContent>
+      <CardFooter>
+        {model.actions.map((action, idx) => {
+          if (action.type === "button") {
+            return (
+              <Button key={idx} variant={getButtonVariant(action.variant)} className="w-full">{action.label}</Button>
+            )
+          }
+          if (action.type === "link") {
+            return (
+              <Button key={idx} variant="link" className="px-0 w-full" asChild>
+                <a href={action.href}>{action.label}</a>
+              </Button>
+            )
+          }
+          return null
+        })}
+      </CardFooter>
+    </Card>
+  )
+}
+
+// Componente para renderizar tela de dashboard
+function DashboardScreen({ model }: { model: Extract<ScreenModel, { type: "dashboard" }> }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {model.cards.map((card, idx) => (
+          <Card key={idx}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{card.value}</div>
+              <p className="text-xs text-muted-foreground">{card.description}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{model.table.title}</CardTitle>
+          <CardDescription>{model.table.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {model.table.columns.map((col, idx) => (
+                  <TableHead key={idx}>{col}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {model.table.rows.map((row, idx) => (
+                <TableRow key={idx}>
+                  {row.map((cell, cidx) => (
+                    <TableCell key={cidx}>{cell}</TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Componente para renderizar tela de configurações
+function SettingsScreen({ model }: { model: Extract<ScreenModel, { type: "settings" }> }) {
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{model.title}</CardTitle>
+        <CardDescription>{model.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {model.switches.map((sw) => (
+          <div className="flex items-center justify-between" key={sw.id}>
+            <div className="space-y-0.5">
+              <Label>{sw.label}</Label>
+              <p className="text-sm text-muted-foreground">{sw.description}</p>
+            </div>
+            <Switch />
+          </div>
+        ))}
+        <div className="space-y-4">
+          <Label>{model.slider.label}</Label>
+          <Slider defaultValue={[model.slider.defaultValue]} max={model.slider.max} step={model.slider.step} />
+        </div>
+        <div className="space-y-2">
+          <Label>{model.select.label}</Label>
+          <Select>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {model.select.options.map((opt) => (
+                <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button>Salvar</Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+// Componente para renderizar tela de perfil
+function ProfileScreen({ model }: { model: Extract<ScreenModel, { type: "profile" }> }) {
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <div className="flex items-center space-x-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={model.avatar} />
+            <AvatarFallback>{model.title[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <CardTitle>{model.title}</CardTitle>
+            <CardDescription>{model.description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue={model.tabs[0]?.value} className="w-full">
+          <TabsList>
+            {model.tabs.map((tab) => (
+              <TabsTrigger value={tab.value} key={tab.value}>{tab.label}</TabsTrigger>
+            ))}
+          </TabsList>
+          {model.tabs.map((tab) => (
+            <TabsContent value={tab.value} key={tab.value} className="space-y-4">
+              {tab.fields && tab.fields.map((field) => {
+                if (field.type === "input") {
+                  return (
+                    <div className="space-y-2" key={field.id}>
+                      <Label htmlFor={field.id}>{field.label}</Label>
+                      <Input id={field.id} type={field.inputType} defaultValue={field.defaultValue} />
+                    </div>
+                  )
+                }
+                return null
+              })}
+              {tab.switches && tab.switches.map((sw) => (
+                <div className="flex items-center justify-between" key={sw.id}>
+                  <div className="space-y-0.5">
+                    <Label>{sw.label}</Label>
+                    <p className="text-sm text-muted-foreground">{sw.description}</p>
+                  </div>
+                  <Switch />
+                </div>
+              ))}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+      <CardFooter>
+        <Button>Salvar</Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
+// Componente para renderizar tela de tabela/lista
+function TableScreen({ model }: { model: Extract<ScreenModel, { type: "table" }> }) {
+  return (
+    <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle>{model.title}</CardTitle>
+        <CardDescription>{model.description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {model.columns.map((col, idx) => (
+                <TableHead key={idx}>{col}</TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {model.rows.map((row, idx) => (
+              <TableRow key={idx}>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <Avatar>
+                      <AvatarImage src={row.user.avatar} />
+                      <AvatarFallback>{row.user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{row.user.name}</p>
+                      <p className="text-sm text-muted-foreground">{row.user.email}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell><Badge>{row.status}</Badge></TableCell>
+                <TableCell>{row.role}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm">Editar</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+      <CardFooter>
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious href="#" />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#">1</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#" isActive>2</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink href="#">3</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationEllipsis />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext href="#" />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </CardFooter>
+    </Card>
   )
 }

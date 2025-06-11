@@ -15,6 +15,10 @@ import {
 
 const DEFAULT_THEMES = [
   {
+    name: "Levva",
+    value: "levva",
+  },
+  {
     name: "Default",
     value: "default",
   },

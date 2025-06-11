@@ -8,7 +8,7 @@ import {
   useState,
 } from "react"
 
-const DEFAULT_THEME = "default"
+const DEFAULT_THEME = "levva"
 
 type ThemeContextType = {
   activeTheme: string

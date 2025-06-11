@@ -70,11 +70,20 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}')
+                const theme = localStorage.getItem('theme') || 'system';
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                const isDark = theme === 'dark' || (theme === 'system' && systemTheme === 'dark');
+                
+                if (isDark) {
+                  document.documentElement.classList.add('dark');
+                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.dark}');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  document.querySelector('meta[name="theme-color"]').setAttribute('content', '${META_THEME_COLORS.light}');
                 }
+
                 if (localStorage.layout) {
-                  document.documentElement.classList.add('layout-' + localStorage.layout)
+                  document.documentElement.classList.add('layout-' + localStorage.layout);
                 }
               } catch (_) {}
             `,
