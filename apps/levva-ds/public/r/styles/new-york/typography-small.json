@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.levva.com/schema/registry-item.json",
+  "name": "typography-small",
+  "type": "registry:levva",
+  "author": "levva (https://ui.levva.com)",
+  "files": [
+    {
+      "path": "examples/typography-small.tsx",
+      "content": "export default function TypographySmall() {\n  return (\n    <small className=\"text-sm font-medium leading-none\">Email address</small>\n  )\n}\n",
+      "type": "registry:levva",
+      "target": ""
+    }
+  ]
+}

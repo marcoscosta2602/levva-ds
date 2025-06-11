@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ui.levva.com/schema/registry-item.json",
+  "name": "badge-secondary",
+  "type": "registry:levva",
+  "registryDependencies": [
+    "badge"
+  ],
+  "files": [
+    {
+      "path": "registry/new-york-v4/examples/badge-secondary.tsx",
+      "content": "import { Badge } from \"@/registry/new-york-v4/ui/badge\"\n\nexport default function BadgeSecondary() {\n  return <Badge variant=\"secondary\">Secondary</Badge>\n}\n",
+      "type": "registry:levva"
+    }
+  ]
+}
