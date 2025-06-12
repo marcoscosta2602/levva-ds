@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/registry/new-york-v4/ui/a
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/registry/new-york-v4/ui/table"
 import { Badge } from "@/registry/new-york-v4/ui/badge"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/registry/new-york-v4/ui/pagination"
+import { ScreenRenderer } from "./ScreenRenderer"
 
 // Tipos para os modelos de tela suportados
 
@@ -179,6 +180,29 @@ export default function PlaygroundPage() {
     }
   }
 
+  // Função para salvar tela para aprovação
+  async function handleSaveForApproval() {
+    if (!screenModel) {
+      toast.error("Gere uma tela antes de salvar para aprovação.")
+      return
+    }
+    try {
+      const response = await fetch("/api/playground/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: screenModel })
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success("Tela salva para aprovação!", { description: data.file })
+      } else {
+        toast.error("Erro ao salvar tela.", { description: data.error })
+      }
+    } catch (err) {
+      toast.error("Erro ao salvar tela.")
+    }
+  }
+
   return (
     <>
       <Toaster />
@@ -219,19 +243,7 @@ export default function PlaygroundPage() {
                         <h3 className="text-lg font-medium">Preview</h3>
                         <div className="bg-muted rounded-md border p-4 min-h-[400px]">
                           {screenModel ? (
-                            screenModel.type === "login" ? (
-                              <LoginScreen model={screenModel} />
-                            ) : screenModel.type === "form" ? (
-                              <FormScreen model={screenModel} />
-                            ) : screenModel.type === "dashboard" ? (
-                              <DashboardScreen model={screenModel} />
-                            ) : screenModel.type === "settings" ? (
-                              <SettingsScreen model={screenModel} />
-                            ) : screenModel.type === "profile" ? (
-                              <ProfileScreen model={screenModel} />
-                            ) : screenModel.type === "table" ? (
-                              <TableScreen model={screenModel} />
-                            ) : null
+                            <ScreenRenderer model={screenModel} />
                           ) : generatedScreen ? (
                             <div dangerouslySetInnerHTML={{ __html: generatedScreen }} />
                           ) : (
@@ -249,11 +261,19 @@ export default function PlaygroundPage() {
                       >
                         {isLoading ? "Gerando..." : "Gerar Tela"}
                       </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={handleSaveForApproval}
+                        disabled={!screenModel || isLoading}
+                      >
+                        Salvar para aprovação
+                      </Button>
                       <Button 
                         variant="secondary"
                         onClick={() => {
                           setPrompt("")
                           setGeneratedScreen(null)
+                          setScreenModel(null)
                         }}
                         disabled={isLoading}
                       >
@@ -269,357 +289,5 @@ export default function PlaygroundPage() {
         </Tabs>
       </div>
     </>
-  )
-}
-
-// Componente para renderizar a tela de login a partir do modelo
-function LoginScreen({ model }: { model: Extract<ScreenModel, { type: "login" }> }) {
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>{model.title}</CardTitle>
-        <CardDescription>{model.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4">
-          {model.fields.map((field: Field) => {
-            if (field.type === "input") {
-              return (
-                <div className="space-y-2" key={field.id}>
-                  <Label htmlFor={field.id}>{field.label}</Label>
-                  <Input id={field.id} type={field.inputType} placeholder={field.placeholder} />
-                </div>
-              )
-            }
-            if (field.type === "checkbox") {
-              return (
-                <div className="flex items-center space-x-2" key={field.id}>
-                  <Checkbox id={field.id} />
-                  <Label htmlFor={field.id}>{field.label}</Label>
-                </div>
-              )
-            }
-            return null
-          })}
-        </form>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2 items-stretch">
-        {model.actions.map((action: Action, idx: number) => {
-          if (action.type === "button") {
-            return (
-              <Button key={idx} variant={getButtonVariant(action.variant)} className="w-full">{action.label}</Button>
-            )
-          }
-          if (action.type === "link") {
-            return (
-              <Button key={idx} variant="link" className="px-0 w-full" asChild>
-                <a href={action.href}>{action.label}</a>
-              </Button>
-            )
-          }
-          return null
-        })}
-      </CardFooter>
-    </Card>
-  )
-}
-
-// Componente para renderizar tela de formulário
-function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }) {
-  return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>{model.title}</CardTitle>
-        <CardDescription>{model.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form className="space-y-4">
-          {model.fields.map((field) => {
-            if (field.type === "input") {
-              return (
-                <div className="space-y-2" key={field.id}>
-                  <Label htmlFor={field.id}>{field.label}</Label>
-                  <Input id={field.id} type={field.inputType} placeholder={field.placeholder} defaultValue={field.defaultValue} />
-                </div>
-              )
-            }
-            if (field.type === "checkbox") {
-              return (
-                <div className="flex items-center space-x-2" key={field.id}>
-                  <Checkbox id={field.id} />
-                  <Label htmlFor={field.id}>{field.label}</Label>
-                </div>
-              )
-            }
-            if (field.type === "radio-group") {
-              return (
-                <div className="space-y-2" key={field.id}>
-                  <Label>{field.label}</Label>
-                  <RadioGroup defaultValue={field.defaultValue}>
-                    {field.options.map((opt) => (
-                      <div className="flex items-center space-x-2" key={opt.value}>
-                        <RadioGroupItem value={opt.value} id={opt.value} />
-                        <Label htmlFor={opt.value}>{opt.label}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )
-            }
-            if (field.type === "select") {
-              return (
-                <div className="space-y-2" key={field.id}>
-                  <Label>{field.label}</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {field.options.map((opt) => (
-                        <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )
-            }
-            return null
-          })}
-        </form>
-      </CardContent>
-      <CardFooter>
-        {model.actions.map((action, idx) => {
-          if (action.type === "button") {
-            return (
-              <Button key={idx} variant={getButtonVariant(action.variant)} className="w-full">{action.label}</Button>
-            )
-          }
-          if (action.type === "link") {
-            return (
-              <Button key={idx} variant="link" className="px-0 w-full" asChild>
-                <a href={action.href}>{action.label}</a>
-              </Button>
-            )
-          }
-          return null
-        })}
-      </CardFooter>
-    </Card>
-  )
-}
-
-// Componente para renderizar tela de dashboard
-function DashboardScreen({ model }: { model: Extract<ScreenModel, { type: "dashboard" }> }) {
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {model.cards.map((card, idx) => (
-          <Card key={idx}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value}</div>
-              <p className="text-xs text-muted-foreground">{card.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>{model.table.title}</CardTitle>
-          <CardDescription>{model.table.description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {model.table.columns.map((col, idx) => (
-                  <TableHead key={idx}>{col}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {model.table.rows.map((row, idx) => (
-                <TableRow key={idx}>
-                  {row.map((cell, cidx) => (
-                    <TableCell key={cidx}>{cell}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Componente para renderizar tela de configurações
-function SettingsScreen({ model }: { model: Extract<ScreenModel, { type: "settings" }> }) {
-  return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>{model.title}</CardTitle>
-        <CardDescription>{model.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {model.switches.map((sw) => (
-          <div className="flex items-center justify-between" key={sw.id}>
-            <div className="space-y-0.5">
-              <Label>{sw.label}</Label>
-              <p className="text-sm text-muted-foreground">{sw.description}</p>
-            </div>
-            <Switch />
-          </div>
-        ))}
-        <div className="space-y-4">
-          <Label>{model.slider.label}</Label>
-          <Slider defaultValue={[model.slider.defaultValue]} max={model.slider.max} step={model.slider.step} />
-        </div>
-        <div className="space-y-2">
-          <Label>{model.select.label}</Label>
-          <Select>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {model.select.options.map((opt) => (
-                <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button>Salvar</Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-// Componente para renderizar tela de perfil
-function ProfileScreen({ model }: { model: Extract<ScreenModel, { type: "profile" }> }) {
-  return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={model.avatar} />
-            <AvatarFallback>{model.title[0]}</AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle>{model.title}</CardTitle>
-            <CardDescription>{model.description}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue={model.tabs[0]?.value} className="w-full">
-          <TabsList>
-            {model.tabs.map((tab) => (
-              <TabsTrigger value={tab.value} key={tab.value}>{tab.label}</TabsTrigger>
-            ))}
-          </TabsList>
-          {model.tabs.map((tab) => (
-            <TabsContent value={tab.value} key={tab.value} className="space-y-4">
-              {tab.fields && tab.fields.map((field) => {
-                if (field.type === "input") {
-                  return (
-                    <div className="space-y-2" key={field.id}>
-                      <Label htmlFor={field.id}>{field.label}</Label>
-                      <Input id={field.id} type={field.inputType} defaultValue={field.defaultValue} />
-                    </div>
-                  )
-                }
-                return null
-              })}
-              {tab.switches && tab.switches.map((sw) => (
-                <div className="flex items-center justify-between" key={sw.id}>
-                  <div className="space-y-0.5">
-                    <Label>{sw.label}</Label>
-                    <p className="text-sm text-muted-foreground">{sw.description}</p>
-                  </div>
-                  <Switch />
-                </div>
-              ))}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </CardContent>
-      <CardFooter>
-        <Button>Salvar</Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-// Componente para renderizar tela de tabela/lista
-function TableScreen({ model }: { model: Extract<ScreenModel, { type: "table" }> }) {
-  return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>{model.title}</CardTitle>
-        <CardDescription>{model.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {model.columns.map((col, idx) => (
-                <TableHead key={idx}>{col}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {model.rows.map((row, idx) => (
-              <TableRow key={idx}>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Avatar>
-                      <AvatarImage src={row.user.avatar} />
-                      <AvatarFallback>{row.user.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{row.user.name}</p>
-                      <p className="text-sm text-muted-foreground">{row.user.email}</p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell><Badge>{row.status}</Badge></TableCell>
-                <TableCell>{row.role}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="sm">Editar</Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-      <CardFooter>
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </CardFooter>
-    </Card>
   )
 }
