@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (!file) {
     return new Response(JSON.stringify({ error: "File is required" }), { status: 400 })
   }
-  const filePath = join(process.cwd(), "apps/levva-ds/pending", file)
+  const filePath = join(process.cwd(), "pending", file)
   try {
     await unlink(filePath)
     return new Response(JSON.stringify({ success: true }), { status: 200 })

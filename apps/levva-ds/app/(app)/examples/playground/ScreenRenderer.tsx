@@ -14,14 +14,155 @@ import { Badge } from "@/registry/new-york-v4/ui/badge"
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/registry/new-york-v4/ui/pagination"
 import { Button } from "@/registry/new-york-v4/ui/button"
 
-export function ScreenRenderer({ model }: { model: ScreenModel }) {
-  if (model.type === "login") return <LoginScreen model={model} />
-  if (model.type === "form") return <FormScreen model={model} />
-  if (model.type === "dashboard") return <DashboardScreen model={model} />
-  if (model.type === "settings") return <SettingsScreen model={model} />
-  if (model.type === "profile") return <ProfileScreen model={model} />
-  if (model.type === "table") return <TableScreen model={model} />
-  return <span className="text-muted-foreground">Tipo de tela não suportado.</span>
+type Field = {
+  type: string
+  id: string
+  label: string
+  inputType?: string
+  placeholder?: string
+  defaultValue?: string
+  options?: { value: string; label: string }[]
+}
+
+type Action = {
+  type: string
+  label: string
+  variant?: string
+  href?: string
+}
+
+type Card = {
+  title: string
+  value: string
+  description: string
+}
+
+type Switch = {
+  id: string
+  label: string
+  description: string
+}
+
+type Slider = {
+  id: string
+  label: string
+  defaultValue: number
+  max: number
+  step: number
+}
+
+type Select = {
+  id: string
+  label: string
+  options: { value: string; label: string }[]
+}
+
+type Tab = {
+  value: string
+  label: string
+  fields?: Field[]
+  switches?: Switch[]
+}
+
+type User = {
+  name: string
+  email: string
+  avatar: string
+}
+
+type TableRow = {
+  user: User
+  status: string
+  role: string
+}
+
+export function ScreenRenderer({ model }: { model: unknown }) {
+  if (!model || typeof model !== 'object' || model === null) return null;
+  const m = model as Record<string, unknown>;
+
+  switch (m.type) {
+    case "login":
+      return <LoginScreen model={m} />;
+    case "form":
+      return <FormScreen model={m} />;
+    case "dashboard":
+      return <DashboardScreen model={m} />;
+    case "settings":
+      return <SettingsScreen model={m} />;
+    case "profile":
+      return <ProfileScreen model={m} />;
+    case "table":
+      if (Array.isArray(m.rows) && Array.isArray(m.head)) return <TableScreen model={m} />;
+      return renderTable(m);
+    case "page":
+      return (
+        <div className="space-y-4">
+          {m.title && <h1 className="text-2xl font-bold mb-2">{m.title as string}</h1>}
+          {Array.isArray(m.content) && m.content.map((item, idx) => (
+            <ScreenRenderer key={idx} model={item} />
+          ))}
+        </div>
+      );
+    case "card":
+      return (
+        <Card className="my-4">
+          {Array.isArray(m.content) && m.content.map((item, idx) => (
+            <ScreenRenderer key={idx} model={item} />
+          ))}
+        </Card>
+      );
+    case "cardHeader":
+      return (
+        <CardHeader>
+          {m.title && <CardTitle>{m.title as string}</CardTitle>}
+          {m.description && <CardDescription>{m.description as string}</CardDescription>}
+        </CardHeader>
+      );
+    case "cardContent":
+      return (
+        <CardContent>
+          {Array.isArray(m.content) && m.content.map((item, idx) => (
+            <ScreenRenderer key={idx} model={item} />
+          ))}
+        </CardContent>
+      );
+    case "cardFooter":
+      return (
+        <CardFooter>
+          {Array.isArray(m.content) && m.content.map((item, idx) => (
+            <ScreenRenderer key={idx} model={item} />
+          ))}
+        </CardFooter>
+      );
+    case "table":
+      return renderTable(m);
+    default:
+      return <span className="text-muted-foreground">Tipo de tela não suportado.</span>;
+  }
+}
+
+function renderTable(model: unknown) {
+  const m = model as Record<string, unknown>;
+  return (
+    <Table className="my-4">
+      <TableHeader>
+        <TableRow>
+          {Array.isArray(m.head) && m.head.map((header, idx) => (
+            <TableHead key={idx}>{(header as Record<string, unknown>).label as string}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.isArray(m.rows) && m.rows.map((row, idx) => (
+          <TableRow key={idx}>
+            {Array.isArray((row as Record<string, unknown>).cells) && (row as Record<string, unknown>).cells.map((cell, cidx) => (
+              <TableCell key={cidx}>{(cell as Record<string, unknown>).value as string}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }
 
 // Componente para renderizar a tela de login a partir do modelo
@@ -34,7 +175,7 @@ function LoginScreen({ model }: { model: Extract<ScreenModel, { type: "login" }>
       </CardHeader>
       <CardContent>
         <form className="space-y-4">
-          {model.fields.map((field: any) => {
+          {model.fields.map((field: Field) => {
             if (field.type === "input") {
               return (
                 <div className="space-y-2" key={field.id}>
@@ -56,7 +197,7 @@ function LoginScreen({ model }: { model: Extract<ScreenModel, { type: "login" }>
         </form>
       </CardContent>
       <CardFooter className="flex flex-col gap-2 items-stretch">
-        {model.actions.map((action: any, idx: number) => {
+        {model.actions.map((action: Action, idx: number) => {
           if (action.type === "button") {
             return (
               <Button key={idx} className="w-full">{action.label}</Button>
@@ -85,7 +226,7 @@ function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }
       </CardHeader>
       <CardContent>
         <form className="space-y-4">
-          {model.fields.map((field: any) => {
+          {model.fields.map((field: Field) => {
             if (field.type === "input") {
               return (
                 <div className="space-y-2" key={field.id}>
@@ -107,7 +248,7 @@ function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }
                 <div className="space-y-2" key={field.id}>
                   <Label>{field.label}</Label>
                   <RadioGroup defaultValue={field.defaultValue}>
-                    {field.options.map((opt: any) => (
+                    {field.options?.map((opt: { value: string; label: string }) => (
                       <div className="flex items-center space-x-2" key={opt.value}>
                         <RadioGroupItem value={opt.value} id={opt.value} />
                         <Label htmlFor={opt.value}>{opt.label}</Label>
@@ -126,7 +267,7 @@ function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {field.options.map((opt: any) => (
+                      {field.options?.map((opt: { value: string; label: string }) => (
                         <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
                       ))}
                     </SelectContent>
@@ -139,7 +280,7 @@ function FormScreen({ model }: { model: Extract<ScreenModel, { type: "form" }> }
         </form>
       </CardContent>
       <CardFooter>
-        {model.actions.map((action: any, idx: number) => {
+        {model.actions.map((action: Action, idx: number) => {
           if (action.type === "button") {
             return (
               <Button key={idx} className="w-full">{action.label}</Button>
@@ -163,7 +304,7 @@ function DashboardScreen({ model }: { model: Extract<ScreenModel, { type: "dashb
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {model.cards.map((card: any, idx: number) => (
+        {model.cards.map((card: Card, idx: number) => (
           <Card key={idx}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
@@ -213,7 +354,7 @@ function SettingsScreen({ model }: { model: Extract<ScreenModel, { type: "settin
         <CardDescription>{model.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {model.switches.map((sw: any) => (
+        {model.switches.map((sw: Switch) => (
           <div className="flex items-center justify-between" key={sw.id}>
             <div className="space-y-0.5">
               <Label>{sw.label}</Label>
@@ -233,7 +374,7 @@ function SettingsScreen({ model }: { model: Extract<ScreenModel, { type: "settin
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
-              {model.select.options.map((opt: any) => (
+              {model.select.options.map((opt: { value: string; label: string }) => (
                 <SelectItem value={opt.value} key={opt.value}>{opt.label}</SelectItem>
               ))}
             </SelectContent>
@@ -265,13 +406,13 @@ function ProfileScreen({ model }: { model: Extract<ScreenModel, { type: "profile
       <CardContent>
         <Tabs defaultValue={model.tabs[0]?.value} className="w-full">
           <TabsList>
-            {model.tabs.map((tab: any) => (
+            {model.tabs.map((tab: Tab) => (
               <TabsTrigger value={tab.value} key={tab.value}>{tab.label}</TabsTrigger>
             ))}
           </TabsList>
-          {model.tabs.map((tab: any) => (
+          {model.tabs.map((tab: Tab) => (
             <TabsContent value={tab.value} key={tab.value} className="space-y-4">
-              {tab.fields && tab.fields.map((field: any) => {
+              {tab.fields && tab.fields.map((field: Field) => {
                 if (field.type === "input") {
                   return (
                     <div className="space-y-2" key={field.id}>
@@ -282,7 +423,7 @@ function ProfileScreen({ model }: { model: Extract<ScreenModel, { type: "profile
                 }
                 return null
               })}
-              {tab.switches && tab.switches.map((sw: any) => (
+              {tab.switches && tab.switches.map((sw: Switch) => (
                 <div className="flex items-center justify-between" key={sw.id}>
                   <div className="space-y-0.5">
                     <Label>{sw.label}</Label>
@@ -319,7 +460,7 @@ function TableScreen({ model }: { model: Extract<ScreenModel, { type: "table" }>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {model.rows.map((row: any, idx: number) => (
+            {model.rows.map((row: TableRow, idx: number) => (
               <TableRow key={idx}>
                 <TableCell>
                   <div className="flex items-center space-x-2">

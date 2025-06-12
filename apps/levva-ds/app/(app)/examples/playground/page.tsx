@@ -6,26 +6,9 @@ import { useState } from "react"
 
 import { Button } from "@/registry/new-york-v4/ui/button"
 import { Textarea } from "@/registry/new-york-v4/ui/textarea"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/registry/new-york-v4/ui/tabs"
+import { Tabs, TabsContent } from "@/registry/new-york-v4/ui/tabs"
 import { Toaster } from "@/registry/new-york-v4/ui/sonner"
 import { toast } from "sonner"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/registry/new-york-v4/ui/card"
-import { Input } from "@/registry/new-york-v4/ui/input"
-import { Label } from "@/registry/new-york-v4/ui/label"
-import { Checkbox } from "@/registry/new-york-v4/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/registry/new-york-v4/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/registry/new-york-v4/ui/select"
-import { Switch } from "@/registry/new-york-v4/ui/switch"
-import { Slider } from "@/registry/new-york-v4/ui/slider"
-import { Avatar, AvatarFallback, AvatarImage } from "@/registry/new-york-v4/ui/avatar"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/registry/new-york-v4/ui/table"
-import { Badge } from "@/registry/new-york-v4/ui/badge"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/registry/new-york-v4/ui/pagination"
 import { ScreenRenderer } from "./ScreenRenderer"
 
 // Tipos para os modelos de tela suportados
@@ -128,13 +111,6 @@ export type ScreenModel =
       }[]
     }
 
-// Função utilitária para garantir que o variant é válido
-const allowedButtonVariants = ["default", "destructive", "outline", "secondary", "ghost", "link"] as const;
-type ButtonVariant = typeof allowedButtonVariants[number];
-function getButtonVariant(variant?: string): ButtonVariant | undefined {
-  return allowedButtonVariants.includes(variant as ButtonVariant) ? (variant as ButtonVariant) : undefined;
-}
-
 export default function PlaygroundPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [prompt, setPrompt] = useState("")
@@ -198,7 +174,7 @@ export default function PlaygroundPage() {
       } else {
         toast.error("Erro ao salvar tela.", { description: data.error })
       }
-    } catch (err) {
+    } catch {
       toast.error("Erro ao salvar tela.")
     }
   }

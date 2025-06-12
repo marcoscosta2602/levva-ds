@@ -1,0 +1,44 @@
+{
+  "type": "form",
+  "title": "Cadastro de Pessoas",
+  "fields": [
+    {
+      "type": "input",
+      "label": "Nome",
+      "inputType": "text",
+      "id": "nome"
+    },
+    {
+      "type": "input",
+      "label": "Idade",
+      "inputType": "number",
+      "id": "idade"
+    },
+    {
+      "type": "select",
+      "label": "Gênero",
+      "id": "genero",
+      "options": [
+        {
+          "value": "masculino",
+          "label": "Masculino"
+        },
+        {
+          "value": "feminino",
+          "label": "Feminino"
+        },
+        {
+          "value": "outro",
+          "label": "Outro"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "button",
+      "label": "Salvar",
+      "variant": "default"
+    }
+  ]
+}

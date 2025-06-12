@@ -1,0 +1,25 @@
+{
+  "type": "form",
+  "title": "Login",
+  "fields": [
+    {
+      "type": "input",
+      "label": "E-mail",
+      "inputType": "email",
+      "id": "email"
+    },
+    {
+      "type": "input",
+      "label": "Senha",
+      "inputType": "password",
+      "id": "senha"
+    }
+  ],
+  "actions": [
+    {
+      "type": "button",
+      "label": "Entrar",
+      "variant": "primary"
+    }
+  ]
+}

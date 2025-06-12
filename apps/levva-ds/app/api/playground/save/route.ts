@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const type = data.model.type || "screen"
   const timestamp = Date.now()
   const fileName = `${type}-${timestamp}.json`
-  const dir = join(process.cwd(), "apps/levva-ds/pending")
+  const dir = join(process.cwd(), "pending")
   const filePath = join(dir, fileName)
 
   try {

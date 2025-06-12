@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { rename } from "fs/promises"
+import { rename, mkdir } from "fs/promises"
 import { join } from "path"
 
 export async function POST(req: NextRequest) {
@@ -7,9 +7,11 @@ export async function POST(req: NextRequest) {
   if (!file) {
     return new Response(JSON.stringify({ error: "File is required" }), { status: 400 })
   }
-  const src = join(process.cwd(), "apps/levva-ds/pending", file)
-  const dest = join(process.cwd(), "apps/levva-ds/ds", file)
+  const src = join(process.cwd(), "pending", file)
+  const destDir = join(process.cwd(), "approved")
+  const dest = join(destDir, file)
   try {
+    await mkdir(destDir, { recursive: true })
     await rename(src, dest)
     return new Response(JSON.stringify({ success: true }), { status: 200 })
   } catch (err) {
